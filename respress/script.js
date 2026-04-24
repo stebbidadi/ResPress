@@ -542,29 +542,26 @@ async function loadCustomFontFromFile(file) {
   const rawBuffer = await file.arrayBuffer();
 
   // Keep separate copies: one for export, one for opentype.js parsing,
-  // and one for browser preview. This prevents the export bytes from
-  // being lost or altered after preview loading.
+  // and one for browser preview. Some valid OTF/CFF fonts can preview in
+  // the browser even if opentype.js cannot parse them, so parsing is allowed
+  // to fail without blocking the upload.
   const exportBuffer = rawBuffer.slice(0);
   const parseBuffer = rawBuffer.slice(0);
   const previewBuffer = rawBuffer.slice(0);
 
+  const fontFace = new FontFace(familyName, previewBuffer);
+  await fontFace.load();
+
   let parsedFont = null;
   let parsedMetrics = null;
-
   try {
     if (typeof opentype !== 'undefined') {
       parsedFont = opentype.parse(parseBuffer);
       parsedMetrics = parseFontMetrics(parsedFont);
     }
   } catch (error) {
-    console.warn('Unable to parse uploaded font for export.', error);
-    throw new Error(
-      'This uploaded font can be previewed by the browser, but ResPress cannot export it. Please upload an OTF or TTF source font.'
-    );
+    console.warn('Unable to parse uploaded font with opentype.js. Falling back to browser-rendered export.', error);
   }
-
-  const fontFace = new FontFace(familyName, previewBuffer);
-  await fontFace.load();
 
   if (state.customFontFace) {
     try {
@@ -1902,9 +1899,122 @@ function getGlyphBitmapPayloadFromGlyph(glyph, sourceFont, options = {}) {
   };
 }
 
+
+function getUnicodeGlyphKey(char) {
+  const codePoint = char.codePointAt(0);
+  if (!Number.isFinite(codePoint)) return null;
+  return `uni_${codePoint.toString(16).toUpperCase().padStart(4, '0')}`;
+}
+
+function renderUploadedFallbackGlyphBitmap(char, options = {}) {
+  const sourceSize = options.sourceSize || 160;
+  const padding = options.padding || Math.round(sourceSize * 0.12);
+  const innerSize = sourceSize - padding * 2;
+
+  const sliderValue = Number(resSlider.value);
+  const mapped = mapResolution(sliderValue / 100);
+  const sampleSize = sliderValue >= 99.5 || mapped >= 0.995
+    ? sourceSize
+    : Math.max(
+        2,
+        Math.min(innerSize, Math.round(2 + mapped * (innerSize - 2)))
+      );
+
+  const glyphCanvas = document.createElement('canvas');
+  const glyphCtx = glyphCanvas.getContext('2d', { willReadFrequently: true });
+  glyphCanvas.width = sourceSize;
+  glyphCanvas.height = sourceSize;
+
+  glyphCtx.setTransform(1, 0, 0, 1, 0, 0);
+  glyphCtx.clearRect(0, 0, sourceSize, sourceSize);
+  glyphCtx.fillStyle = '#000';
+  glyphCtx.fillRect(0, 0, sourceSize, sourceSize);
+
+  glyphCtx.fillStyle = '#fff';
+  glyphCtx.textAlign = 'center';
+  glyphCtx.textBaseline = 'middle';
+  glyphCtx.font = `400 ${Math.floor(innerSize * 0.86)}px ${state.fontFamily}`;
+  glyphCtx.fillText(char, sourceSize / 2, sourceSize / 2);
+
+  let finalCanvas = glyphCanvas;
+  let finalCtx = glyphCtx;
+
+  if (sliderValue >= 99.5 || mapped >= 0.995) {
+    if (state.hinting) applyHintedLevels(glyphCtx, sourceSize, sourceSize);
+    else applyThreshold(glyphCtx, sourceSize, sourceSize);
+  } else {
+    const smallCanvas = document.createElement('canvas');
+    const smallCtx = smallCanvas.getContext('2d', { willReadFrequently: true });
+    smallCanvas.width = sampleSize;
+    smallCanvas.height = sampleSize;
+
+    smallCtx.setTransform(1, 0, 0, 1, 0, 0);
+    smallCtx.clearRect(0, 0, sampleSize, sampleSize);
+    smallCtx.imageSmoothingEnabled = state.hinting;
+    smallCtx.drawImage(
+      glyphCanvas,
+      padding,
+      padding,
+      innerSize,
+      innerSize,
+      0,
+      0,
+      sampleSize,
+      sampleSize
+    );
+
+    if (state.hinting) applyHintedLevels(smallCtx, sampleSize, sampleSize);
+    else applyThreshold(smallCtx, sampleSize, sampleSize);
+
+    finalCanvas = smallCanvas;
+    finalCtx = smallCtx;
+  }
+
+  const width = finalCanvas.width;
+  const height = finalCanvas.height;
+  const image = finalCtx.getImageData(0, 0, width, height);
+  const pixels = [];
+
+  for (let i = 0; i < image.data.length; i += 4) {
+    pixels.push(image.data[i] > 127 ? 1 : 0);
+  }
+
+  return {
+    width,
+    height,
+    pixels,
+    bounds: {
+      minX: 0,
+      minY: 0,
+      maxX: 1000,
+      maxY: 1000
+    }
+  };
+}
+
+function buildUploadedFallbackGlyphBitmapPayloads() {
+  const payload = {};
+
+  for (const char of EXPORTED_GLYPHS) {
+    if (char === ' ') continue;
+
+    const key = getUnicodeGlyphKey(char);
+    if (!key) continue;
+
+    payload[key] = renderUploadedFallbackGlyphBitmap(char, {
+      sourceSize: 160,
+      padding: 18
+    });
+  }
+
+  return payload;
+}
+
 function buildGlyphBitmapPayloads() {
   const font = state.customFontParsed;
-  if (!font || !font.glyphs || !font.glyphs.glyphs) return {};
+  if (!font || !font.glyphs || !font.glyphs.glyphs) {
+    return buildUploadedFallbackGlyphBitmapPayloads();
+  }
 
   const payload = {};
   const rawGlyphs = font.glyphs.glyphs;
