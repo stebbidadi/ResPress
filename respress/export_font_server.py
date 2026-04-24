@@ -444,6 +444,10 @@ def build_zip_bytes(
     )
 
     glyph_bitmaps = normalize_glyph_bitmap_keys(source_font, glyph_bitmaps)
+    if not glyph_bitmaps:
+        raise ValueError(
+            "No exportable glyphs were found in this font. Try another OTF/TTF or check that the font contains standard Unicode characters."
+        )
 
     derivative_font = rebuild_derivative_font(
         source_font=source_font,
