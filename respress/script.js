@@ -2011,32 +2011,12 @@ function buildUploadedFallbackGlyphBitmapPayloads() {
 }
 
 function buildGlyphBitmapPayloads() {
-  const font = state.customFontParsed;
-  if (!font || !font.glyphs || !font.glyphs.glyphs) {
-    return buildUploadedFallbackGlyphBitmapPayloads();
-  }
-
-  const payload = {};
-  const rawGlyphs = font.glyphs.glyphs;
-  const glyphList = Array.isArray(rawGlyphs)
-    ? rawGlyphs
-    : Object.keys(rawGlyphs)
-        .sort((a, b) => Number(a) - Number(b))
-        .map((key) => rawGlyphs[key]);
-
-  for (const glyph of glyphList) {
-    if (!glyph || !glyph.name) continue;
-    if (glyph.name === '.notdef') continue;
-
-    const bitmapPayload = getGlyphBitmapPayloadFromGlyph(glyph, font, {
-      sourceSize: 160
-    });
-
-    if (!bitmapPayload) continue;
-    payload[glyph.name] = bitmapPayload;
-  }
-
-  return payload;
+  // Uploaded-font export no longer depends on opentype.js parsing.
+  // The browser renders each exported character with the active uploaded font,
+  // then the backend maps the Unicode keys back into the real source font cmap.
+  // This is more reliable for valid OTF/CFF fonts that preview correctly but
+  // are fragile in opentype.js.
+  return buildUploadedFallbackGlyphBitmapPayloads();
 }
 
 // --------------------------------------------------
@@ -2432,11 +2412,6 @@ async function emailFontViaBackend() {
       return;
     }
 
-    if (!state.customFontParsed) {
-      alert('This uploaded font cannot be exported. Please upload an OTF or TTF source font.');
-      return;
-    }
-
     url = EMAIL_BACKEND_URL;
     body = {
       file_name: state.customFontFile.name,
@@ -2481,11 +2456,6 @@ async function generateSourcePreservingFontZIP() {
 
   if (!state.customFontLoaded || !state.customFontBytes || !state.customFontFile) {
     alert(t.exportNeedsUpload);
-    return;
-  }
-
-  if (!state.customFontParsed) {
-    alert('This uploaded font cannot be exported. Please upload an OTF or TTF source font.');
     return;
   }
 
