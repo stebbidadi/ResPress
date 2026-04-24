@@ -2158,27 +2158,15 @@ function renderGlyphBitmap(char, options = {}) {
   if (state.hinting) applyHintedLevels(smallCtx, sampleSize, sampleSize);
   else applyThreshold(smallCtx, sampleSize, sampleSize);
 
-  upCtx.setTransform(1, 0, 0, 1, 0, 0);
-  upCtx.clearRect(0, 0, sourceSize, sourceSize);
-  upCtx.fillStyle = '#000';
-  upCtx.fillRect(0, 0, sourceSize, sourceSize);
-  upCtx.imageSmoothingEnabled = false;
-  upCtx.drawImage(
-    smallCanvas,
-    0,
-    0,
-    sampleSize,
-    sampleSize,
-    padding,
-    padding,
-    innerSize,
-    innerSize
-  );
-
+  // For backend font export, keep the actual sampled bitmap size.
+  // Before this, legacy glyphs were upscaled back to a fixed 96×96 grid,
+  // so circle exports always had almost the same dot density no matter
+  // where the resolution slider was. Sending the low-resolution sample
+  // lets the Python exporter rebuild fewer/larger or more/smaller circles.
   return {
-    canvas: upCanvas,
-    width: sourceSize,
-    height: sourceSize
+    canvas: smallCanvas,
+    width: sampleSize,
+    height: sampleSize
   };
 }
 
