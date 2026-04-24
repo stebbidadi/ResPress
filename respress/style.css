@@ -60,7 +60,7 @@ button,
   color: #fff;
   min-height: 32px;
   padding: 7px 11px;
-  font-size: 11px;
+  font-size: 13px;
   line-height: 1;
   letter-spacing: 0.04em;
   border-radius: 16px;
@@ -379,8 +379,8 @@ button.is-active,
 .top-left {
   display: flex;
   align-items: center;
-  min-height: 32px;
-  font-size: 11px;
+  min-height: 34px;
+  font-size: 13px;
   color: var(--muted);
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -402,8 +402,8 @@ button.is-active,
 
 #helpBtn,
 #langBtn {
-  min-width: 32px;
-  width: 32px;
+  min-width: 34px;
+  width: 34px;
   padding: 0;
   opacity: 0.72;
 }
@@ -449,13 +449,13 @@ button.is-active,
 }
 
 .dropdown-fonts .dropdown-menu-item {
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .dropdown-tools .dropdown-menu-item {
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .dropdown-download .dropdown-menu-item {
@@ -744,7 +744,7 @@ body.presentation-mode #displayCanvas {
   #fontMenuBtn,
   #toolsMenuBtn,
   #downloadMenuBtn {
-    font-size: 11px;
+    font-size: 12px;
     padding: 8px 10px;
   }
 
