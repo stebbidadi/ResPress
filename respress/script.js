@@ -539,9 +539,31 @@ async function loadCustomFontFromFile(file) {
   if (!file) return;
 
   const familyName = `UploadedFont_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-  const buffer = await file.arrayBuffer();
-  const fontFace = new FontFace(familyName, buffer);
+  const rawBuffer = await file.arrayBuffer();
 
+  // Keep separate copies: one for export, one for opentype.js parsing,
+  // and one for browser preview. This prevents the export bytes from
+  // being lost or altered after preview loading.
+  const exportBuffer = rawBuffer.slice(0);
+  const parseBuffer = rawBuffer.slice(0);
+  const previewBuffer = rawBuffer.slice(0);
+
+  let parsedFont = null;
+  let parsedMetrics = null;
+
+  try {
+    if (typeof opentype !== 'undefined') {
+      parsedFont = opentype.parse(parseBuffer);
+      parsedMetrics = parseFontMetrics(parsedFont);
+    }
+  } catch (error) {
+    console.warn('Unable to parse uploaded font for export.', error);
+    throw new Error(
+      'This uploaded font can be previewed by the browser, but ResPress cannot export it. Please upload an OTF or TTF source font.'
+    );
+  }
+
+  const fontFace = new FontFace(familyName, previewBuffer);
   await fontFace.load();
 
   if (state.customFontFace) {
@@ -554,23 +576,12 @@ async function loadCustomFontFromFile(file) {
 
   document.fonts.add(fontFace);
 
-  let parsedFont = null;
-  let parsedMetrics = null;
-  try {
-    if (typeof opentype !== 'undefined') {
-      parsedFont = opentype.parse(buffer.slice(0));
-      parsedMetrics = parseFontMetrics(parsedFont);
-    }
-  } catch (error) {
-    console.warn('Unable to parse uploaded font metrics.', error);
-  }
-
   state.customFontFace = fontFace;
   state.customFontLoaded = true;
   state.customFontFamily = familyName;
   state.customFontLabel = getSafeDisplayFontName(file.name);
   state.customFontFile = file;
-  state.customFontBytes = buffer.slice(0);
+  state.customFontBytes = exportBuffer;
   state.customFontMime = file.type || 'font/otf';
   state.customFontParsed = parsedFont;
   state.customFontMetrics = parsedMetrics;
@@ -2306,8 +2317,13 @@ async function emailFontViaBackend() {
   };
 
   if (usingUploadedFont) {
-    if (!state.customFontBytes || !state.customFontFile || !state.customFontParsed) {
+    if (!state.customFontBytes || !state.customFontFile) {
       alert(t.exportNeedsUpload);
+      return;
+    }
+
+    if (!state.customFontParsed) {
+      alert('This uploaded font cannot be exported. Please upload an OTF or TTF source font.');
       return;
     }
 
@@ -2353,8 +2369,13 @@ async function emailFontViaBackend() {
 async function generateSourcePreservingFontZIP() {
   const t = translations[state.language];
 
-  if (!state.customFontLoaded || !state.customFontBytes || !state.customFontFile || !state.customFontParsed) {
+  if (!state.customFontLoaded || !state.customFontBytes || !state.customFontFile) {
     alert(t.exportNeedsUpload);
+    return;
+  }
+
+  if (!state.customFontParsed) {
+    alert('This uploaded font cannot be exported. Please upload an OTF or TTF source font.');
     return;
   }
 
