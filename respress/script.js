@@ -118,6 +118,8 @@ const EMAIL_BACKEND_URL = `${EXPORT_BACKEND_BASE}/email-font`;
 const EMAIL_LEGACY_BACKEND_URL = `${EXPORT_BACKEND_BASE}/email-font-legacy`;
 const LEGACY_EXPORT_SOURCE_SIZE = 96;
 const LEGACY_EXPORT_PADDING = 12;
+const UPLOADED_EXPORT_SOURCE_SIZE = 256;
+const UPLOADED_EXPORT_PADDING = 30;
 
 // --------------------------------------------------
 // TRANSLATIONS
@@ -1907,8 +1909,8 @@ function getUnicodeGlyphKey(char) {
 }
 
 function renderUploadedFallbackGlyphBitmap(char, options = {}) {
-  const sourceSize = options.sourceSize || 160;
-  const padding = options.padding || Math.round(sourceSize * 0.12);
+  const sourceSize = options.sourceSize || UPLOADED_EXPORT_SOURCE_SIZE;
+  const padding = options.padding || UPLOADED_EXPORT_PADDING;
   const innerSize = sourceSize - padding * 2;
 
   const sliderValue = Number(resSlider.value);
@@ -2002,8 +2004,8 @@ function buildUploadedFallbackGlyphBitmapPayloads() {
     if (!key) continue;
 
     payload[key] = renderUploadedFallbackGlyphBitmap(char, {
-      sourceSize: 160,
-      padding: 18
+      sourceSize: UPLOADED_EXPORT_SOURCE_SIZE,
+      padding: UPLOADED_EXPORT_PADDING
     });
   }
 
