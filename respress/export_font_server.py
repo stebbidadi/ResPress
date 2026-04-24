@@ -393,6 +393,39 @@ def source_extension(file_name: str, font: TTFont) -> str:
     return ".otf" if get_outline_kind(font) in {"CFF", "CFF2"} else ".ttf"
 
 
+
+
+def normalize_glyph_bitmap_keys(source_font: TTFont, glyph_bitmaps: Dict[str, dict]) -> Dict[str, dict]:
+    """Allow the frontend to send either real glyph names or Unicode fallback keys.
+
+    opentype.js cannot parse every valid OTF/CFF font in the browser. When that
+    happens, the frontend renders glyphs with the browser and sends keys like
+    uni_0041. The server maps those codepoints back to the source font glyph
+    names using the font cmap, so source-preserving export still works.
+    """
+    if not glyph_bitmaps:
+        return {}
+
+    cmap = source_font.getBestCmap() or {}
+    normalized: Dict[str, dict] = {}
+
+    for key, bitmap_payload in glyph_bitmaps.items():
+        glyph_name = key
+
+        if isinstance(key, str) and key.startswith("uni_"):
+            try:
+                codepoint = int(key[4:], 16)
+                glyph_name = cmap.get(codepoint)
+            except Exception:
+                glyph_name = None
+
+        if not glyph_name:
+            continue
+
+        normalized[glyph_name] = bitmap_payload
+
+    return normalized
+
 def build_zip_bytes(
     source_font_bytes: bytes,
     source_file_name: str,
@@ -409,6 +442,8 @@ def build_zip_bytes(
         recalcBBoxes=True,
         recalcTimestamp=False,
     )
+
+    glyph_bitmaps = normalize_glyph_bitmap_keys(source_font, glyph_bitmaps)
 
     derivative_font = rebuild_derivative_font(
         source_font=source_font,
