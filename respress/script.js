@@ -1073,11 +1073,23 @@ function updateSliderVisuals() {
   scaleSlider.style.setProperty('--percent', `${scalePercent}%`);
 }
 
+function getStageContentWidth() {
+  const fallback = stage?.clientWidth || window.innerWidth || 320;
+
+  if (!stageScroller) {
+    return Math.max(320, Math.floor(fallback));
+  }
+
+  const styles = window.getComputedStyle(stageScroller);
+  const paddingLeft = parseFloat(styles.paddingLeft) || 0;
+  const paddingRight = parseFloat(styles.paddingRight) || 0;
+  const contentWidth = stageScroller.clientWidth - paddingLeft - paddingRight;
+
+  return Math.max(320, Math.floor(contentWidth || fallback));
+}
+
 function getStageDimensions() {
-  const cssWidth = Math.max(
-    320,
-    Math.floor(stageScroller?.clientWidth || stage?.clientWidth || window.innerWidth)
-  );
+  const cssWidth = getStageContentWidth();
   const text = syncTextField() || ' ';
   const cssHeight = estimateCompositionHeight(cssWidth, text);
 
