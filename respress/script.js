@@ -15,6 +15,7 @@ const bufferCanvas = document.getElementById('bufferCanvas');
 const compositionCanvas = document.getElementById('compositionCanvas');
 const stage = document.getElementById('stage');
 const stageScroller = document.getElementById('stageScroller');
+const alignButtons = Array.from(document.querySelectorAll('.align-btn'));
 
 const displayCtx = displayCanvas.getContext('2d', { willReadFrequently: true });
 const sourceCtx = sourceCanvas.getContext('2d', { willReadFrequently: true });
@@ -143,6 +144,9 @@ const translations = {
     gridOff: 'Grid: Off',
     shapeSquare: 'Shape: Square',
     shapeCircle: 'Shape: Circle',
+    alignLeft: 'Left',
+    alignCenter: 'Center',
+    alignRight: 'Right',
     infoOn: 'Info Panel: On',
     infoOff: 'Info Panel: Off',
     presentationOn: 'Presentation: On',
@@ -222,6 +226,9 @@ const translations = {
     gridOff: 'Grid: Af',
     shapeSquare: 'Form: Ferningar',
     shapeCircle: 'Form: Punktar',
+    alignLeft: 'Vinstri',
+    alignCenter: 'Miðja',
+    alignRight: 'Hægri',
     infoOn: 'Upplýsingar: Á',
     infoOff: 'Upplýsingar: Af',
     presentationOn: 'Sýning: Á',
@@ -323,6 +330,7 @@ const state = {
   introRaf: 0,
   introDisplayProgress: 0.22,
   textScale: 1,
+  textAlign: 'left',
   fontMenuOpen: false,
   toolsMenuOpen: false,
   downloadMenuOpen: false,
@@ -716,10 +724,16 @@ function estimateCompositionHeight(cssWidth, text) {
   return Math.max(stageMin, needed);
 }
 
-function drawMixedLine(ctx, line, xPosition, baselineY, size, monoColor, align = 'center') {
+function drawMixedLine(ctx, line, xPosition, baselineY, size, monoColor, align = 'left') {
   const tokens = tokenizeLine(line || ' ');
   const totalWidth = measureMixedLine(ctx, line, size);
-  let x = align === 'left' ? xPosition : xPosition - totalWidth / 2;
+  let x = xPosition;
+
+  if (align === 'center') {
+    x = xPosition - totalWidth / 2;
+  } else if (align === 'right') {
+    x = xPosition - totalWidth;
+  }
 
   for (const token of tokens) {
     ctx.font = getTextRenderFont(token, size);
@@ -948,8 +962,14 @@ function drawComposition(ctx, outW, outH, text, options = {}) {
   ctx.textBaseline = 'alphabetic';
   ctx.fillStyle = fg;
 
-  const textAlignMode = options.textAlign || (options.centerText ? 'center' : 'left');
-  const textX = textAlignMode === 'center' ? cssWidth / 2 : paddingX;
+  const textAlignMode = options.textAlign || state.textAlign || 'left';
+  let textX = paddingX;
+
+  if (textAlignMode === 'center') {
+    textX = cssWidth / 2;
+  } else if (textAlignMode === 'right') {
+    textX = cssWidth - paddingX;
+  }
 
   for (const line of lines) {
     drawMixedLine(ctx, line || ' ', textX, baselineY, scaledSize, fg, textAlignMode);
@@ -1399,6 +1419,24 @@ function updateToggleStates() {
   document.body.classList.toggle('presentation-mode', state.presentationMode);
 }
 
+function updateAlignmentControls() {
+  const t = translations[state.language];
+  const labels = {
+    left: t.alignLeft,
+    center: t.alignCenter,
+    right: t.alignRight
+  };
+
+  alignButtons.forEach((btn) => {
+    const align = btn.dataset.align;
+    const active = align === state.textAlign;
+
+    btn.classList.toggle('is-active', active);
+    btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+    btn.textContent = labels[align] || align;
+  });
+}
+
 function updateHelpPanelText() {
   if (!helpPanel) return;
 
@@ -1475,6 +1513,7 @@ function updateUI() {
 
   updateFontMenuHighlight();
   updateToggleStates();
+  updateAlignmentControls();
   updateHelpPanelText();
   updateExportModalText();
   updatePopupText();
@@ -1508,6 +1547,7 @@ function resetTool() {
   state.fontKey = 'plex';
   state.fontFamily = fontMap.plex;
   state.textScale = 1;
+  state.textAlign = 'left';
 
   if (textInput) textInput.value = DEFAULT_TEXT;
   if (resSlider) resSlider.value = '40';
@@ -2730,6 +2770,22 @@ function bindFontEvents() {
   });
 }
 
+function bindAlignmentEvents() {
+  alignButtons.forEach((btn) => {
+    btn.addEventListener('click', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+
+      const nextAlign = btn.dataset.align;
+      if (!['left', 'center', 'right'].includes(nextAlign)) return;
+
+      state.textAlign = nextAlign;
+      updateAlignmentControls();
+      draw();
+    });
+  });
+}
+
 function bindToolEvents() {
   if (hintBtn) {
     hintBtn.addEventListener('click', (event) => {
@@ -3016,6 +3072,7 @@ function bindEvents() {
   bindTextEvents();
   bindMenuEvents();
   bindFontEvents();
+  bindAlignmentEvents();
   bindToolEvents();
   bindLanguageEvents();
   bindIntroEvents();
