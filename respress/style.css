@@ -215,7 +215,7 @@ button.is-active,
     linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.015)),
     rgba(0, 0, 0, 0.98);
   border: 1px solid rgba(255, 255, 255, 0.10);
-  border-radius: 22px;
+  border-radius: 18px;
   box-shadow:
     0 24px 80px rgba(0,0,0,0.55),
     inset 0 1px 0 rgba(255,255,255,0.04);
@@ -635,7 +635,7 @@ button.is-active,
 .stage {
   height: 100%;
   min-height: 0;
-  padding: 4px 16px 16px;
+  padding: 4px 16px 12px;
   background: transparent;
   overflow: hidden;
 }
@@ -643,7 +643,7 @@ button.is-active,
 .stage-shell {
   height: 100%;
   min-height: 0;
-  border-radius: 22px;
+  border-radius: 18px;
   background:
     linear-gradient(180deg, rgba(255,255,255,0.025), rgba(255,255,255,0.01)),
     rgba(255,255,255,0.01);
@@ -660,7 +660,7 @@ button.is-active,
   overflow-y: auto;
   overflow-x: hidden;
   overscroll-behavior: contain;
-  padding: 20px 20px 72px;
+  padding: 0 0 64px;
   scrollbar-width: thin;
   scrollbar-color: rgba(255,255,255,0.2) transparent;
 }
@@ -681,8 +681,8 @@ button.is-active,
 #displayCanvas {
   width: 100%;
   display: block;
-  border-radius: 14px;
-  box-shadow: 0 0 0 1px rgba(255,255,255,0.04);
+  border-radius: 18px;
+  box-shadow: none;
 }
 
 body.presentation-mode .topbar,
@@ -794,7 +794,7 @@ body.presentation-mode #displayCanvas {
   }
 
   .stage-scroller {
-    padding: 16px 16px 58px;
+    padding: 0 0 54px;
   }
 }
 .export-email-input[hidden] {
