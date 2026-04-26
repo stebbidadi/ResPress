@@ -641,6 +641,7 @@ button.is-active,
 }
 
 .stage-shell {
+  position: relative;
   height: 100%;
   min-height: 0;
   border-radius: 18px;
@@ -799,4 +800,57 @@ body.presentation-mode #displayCanvas {
 }
 .export-email-input[hidden] {
   display: none !important;
+}
+
+.canvas-align-controls {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 6;
+  display: flex;
+  gap: 5px;
+  padding: 5px;
+  border-radius: 16px;
+  background: rgba(0, 0, 0, 0.46);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  backdrop-filter: blur(8px);
+}
+
+.align-btn {
+  min-width: 0;
+  min-height: 26px;
+  padding: 6px 9px;
+  border-radius: 12px;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.align-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+
+.align-btn.is-active {
+  background: #fff;
+  color: #000;
+}
+
+body.presentation-mode .canvas-align-controls {
+  display: none;
+}
+
+@media (max-width: 720px) {
+  .canvas-align-controls {
+    top: 9px;
+    left: 9px;
+    gap: 4px;
+  }
+
+  .align-btn {
+    padding: 6px 7px;
+    font-size: 9px;
+  }
 }
