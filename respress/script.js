@@ -439,8 +439,8 @@ function getActiveFontMetrics() {
     typoLineGap: 120,
     ascentRatio: 0.8,
     descentRatio: 0.2,
-    lineGapRatio: 0.12,
-    totalRatio: 1.12
+    lineGapRatio: 0.22,
+    totalRatio: 1.22
   };
 }
 
