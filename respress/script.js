@@ -66,6 +66,10 @@ const projectPopupContinue = document.getElementById('projectPopupContinue');
 const projectPopupLangBtn = document.getElementById('projectPopupLangBtn');
 
 const projectTag = document.getElementById('projectTag');
+const alignLeftBtn = document.getElementById('alignLeftBtn');
+const alignCenterBtn = document.getElementById('alignCenterBtn');
+const alignRightBtn = document.getElementById('alignRightBtn');
+const alignButtons = [alignLeftBtn, alignCenterBtn, alignRightBtn].filter(Boolean);
 
 const sliderLabel = document.getElementById('sliderLabel');
 const sliderMin = document.getElementById('sliderMin');
@@ -323,6 +327,7 @@ const state = {
   introRaf: 0,
   introDisplayProgress: 0.22,
   textScale: 1,
+  textAlign: 'left',
   fontMenuOpen: false,
   toolsMenuOpen: false,
   downloadMenuOpen: false,
@@ -719,7 +724,13 @@ function estimateCompositionHeight(cssWidth, text) {
 function drawMixedLine(ctx, line, xPosition, baselineY, size, monoColor, align = 'center') {
   const tokens = tokenizeLine(line || ' ');
   const totalWidth = measureMixedLine(ctx, line, size);
-  let x = align === 'left' ? xPosition : xPosition - totalWidth / 2;
+  let x = xPosition;
+
+  if (align === 'center') {
+    x = xPosition - totalWidth / 2;
+  } else if (align === 'right') {
+    x = xPosition - totalWidth;
+  }
 
   for (const token of tokens) {
     ctx.font = getTextRenderFont(token, size);
@@ -948,8 +959,14 @@ function drawComposition(ctx, outW, outH, text, options = {}) {
   ctx.textBaseline = 'alphabetic';
   ctx.fillStyle = fg;
 
-  const textAlignMode = options.textAlign || (options.centerText ? 'center' : 'left');
-  const textX = textAlignMode === 'center' ? cssWidth / 2 : paddingX;
+  const textAlignMode = options.textAlign || (options.centerText ? 'center' : state.textAlign || 'left');
+  let textX = paddingX;
+
+  if (textAlignMode === 'center') {
+    textX = cssWidth / 2;
+  } else if (textAlignMode === 'right') {
+    textX = cssWidth - paddingX;
+  }
 
   for (const line of lines) {
     drawMixedLine(ctx, line || ' ', textX, baselineY, scaledSize, fg, textAlignMode);
@@ -1389,6 +1406,12 @@ function updateFontMenuHighlight() {
   if (fontMenuBtn) fontMenuBtn.textContent = getActiveFontLabel();
 }
 
+function updateAlignControls() {
+  alignButtons.forEach((btn) => {
+    btn.classList.toggle('is-active', btn.dataset.align === state.textAlign);
+  });
+}
+
 function updateToggleStates() {
   if (hintBtn) hintBtn.classList.toggle('is-active', state.hinting);
   if (contrastBtn) contrastBtn.classList.toggle('is-active', state.inverted);
@@ -1475,6 +1498,7 @@ function updateUI() {
 
   updateFontMenuHighlight();
   updateToggleStates();
+  updateAlignControls();
   updateHelpPanelText();
   updateExportModalText();
   updatePopupText();
@@ -1489,6 +1513,13 @@ function updateUI() {
 // --------------------------------------------------
 // TEXT ACTIONS
 // --------------------------------------------------
+
+function setTextAlign(nextAlign) {
+  if (!['left', 'center', 'right'].includes(nextAlign)) return;
+  state.textAlign = nextAlign;
+  updateAlignControls();
+  draw();
+}
 
 function togglePresentationMode() {
   state.presentationMode = !state.presentationMode;
@@ -1508,6 +1539,7 @@ function resetTool() {
   state.fontKey = 'plex';
   state.fontFamily = fontMap.plex;
   state.textScale = 1;
+  state.textAlign = 'left';
 
   if (textInput) textInput.value = DEFAULT_TEXT;
   if (resSlider) resSlider.value = '40';
@@ -2618,6 +2650,16 @@ function handleShortcut(event) {
 // EVENT BINDING
 // --------------------------------------------------
 
+function bindAlignEvents() {
+  alignButtons.forEach((btn) => {
+    btn.addEventListener('click', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      setTextAlign(btn.dataset.align);
+    });
+  });
+}
+
 function bindTextEvents() {
   if (!textInput) return;
 
@@ -3014,6 +3056,7 @@ function bindWindowEvents() {
 
 function bindEvents() {
   bindTextEvents();
+  bindAlignEvents();
   bindMenuEvents();
   bindFontEvents();
   bindToolEvents();
