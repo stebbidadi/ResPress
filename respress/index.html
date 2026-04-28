@@ -237,10 +237,12 @@
 
     <section id="stage" class="stage">
       <div class="stage-shell">
-        <div class="canvas-align-controls" aria-label="Text alignment">
-          <button class="align-btn is-active" type="button" data-align="left" aria-pressed="true">Left</button>
-          <button class="align-btn" type="button" data-align="center" aria-pressed="false">Center</button>
-          <button class="align-btn" type="button" data-align="right" aria-pressed="false">Right</button>
+        <div class="canvas-align-overlay" aria-label="Text alignment">
+          <div class="canvas-align-controls" role="group" aria-label="Text alignment">
+            <button id="alignLeftBtn" class="align-btn is-active" type="button" data-align="left" aria-label="Align left">LEFT</button>
+            <button id="alignCenterBtn" class="align-btn" type="button" data-align="center" aria-label="Align center">CENTER</button>
+            <button id="alignRightBtn" class="align-btn" type="button" data-align="right" aria-label="Align right">RIGHT</button>
+          </div>
         </div>
 
         <div id="stageScroller" class="stage-scroller">
